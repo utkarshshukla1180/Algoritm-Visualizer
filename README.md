@@ -2,7 +2,7 @@
 
 Algorithm Visualizer is an interactive web application for visualizing graph traversal and pathfinding algorithms. It provides an intuitive way to understand how different algorithms explore a graph step by step.
 
-### 🔗 [Live Demo](https://YOUR-DEPLOYMENT-URL.vercel.app)
+### 🔗 [Live Demo]([https://YOUR-DEPLOYMENT-URL.vercel.app](https://path-finder-ba3o3cgdk-utkarshshukla1180-4625s-projects.vercel.app/))
 
 <p align="center">
   <img src="homeAnimation1.gif" alt="Algorithm Visualizer Demo" width="900">
