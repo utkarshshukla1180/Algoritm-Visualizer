@@ -1,22 +1,21 @@
 var algoselected = false;
-const modalalgo = document.getElementById('algobtntext')
-const modelMaze = document.getElementById('mazebtntext')
-const modalspeed = document.getElementById('speedbtntext')
-const modalclear = document.getElementById('btnclearswalls')
+const modalalgo = document.getElementById('algobtntext');
+const modelMaze = document.getElementById('mazebtntext');
+const modalspeed = document.getElementById('speedbtntext');
+const modalclear = document.getElementById('btnclearswalls');
 const dropDownAlgo = document.getElementsByClassName('algodropdownContent')[0];
 const dropDownspeed = document.getElementsByClassName('speeddropdownContent')[0];
-const dropDownmaze = document.getElementsByClassName('mazaDropDowncontent')[0];
-const dropDownsclear = document.getElementById('clear');
 const gridTable = document.getElementById('gridTable');
+const tableWrap = document.getElementsByClassName('table-wrap')[0];
 const bv = document.getElementById('boxVisited');
 var textP = document.getElementById('textP');
 var pn = document.getElementById('pn');
 var textV = document.getElementById('textV');
 var algoName = document.getElementById('algoName');
 var algoDesc = document.getElementById('algoDesc');
-var td = document.getElementsByTagName('td')
-var pv = document.getElementById('pathVisited')
+var pv = document.getElementById('pathVisited');
 var ListOfNodes = [];
+var nodeIndex = new Map();
 var nodes = [];
 var visiteds = [];
 var vis = [];
@@ -25,8 +24,9 @@ var viz = false;
 var start;
 var end;
 var count = 0;
+var CELL = 25;
 var WIDTH = 50;
-var HEIGHT = screen.height> 800 ?30:16;
+var HEIGHT = 30;
 var speed = 5;
 var mouseclicked = false;
 var startDrag = false;
@@ -35,11 +35,12 @@ var rightpressed = false;
 var previousStart;
 var previousEnd;
 let curr;
-var pps = 'unv'
-var ppe = 'unv'
+var pps = 'unv';
+var ppe = 'unv';
 var visualizing = false;
-
-console.log(screen.height);
+var listM = [];
+var resizeTimer;
+const DEFAULT_DESC = 'Path Finder visualizes how different path finding algorithms search a grid';
 
 class QElement {
     constructor(element, priority) {
@@ -47,6 +48,7 @@ class QElement {
         this.priority = priority;
     }
 }
+
 class PriorityQueue {
     constructor() {
         this.items = [];
@@ -66,8 +68,6 @@ class PriorityQueue {
             return true;
         return false;
     }
-
-    // A function to implement bubble sort 
     sort() {
         var i, j;
         for (i = 0; i < this.items.length - 1; i++)
@@ -77,32 +77,89 @@ class PriorityQueue {
                     this.items[j] = this.items[j + 1];
                     this.items[j + 1] = temp;
                 }
-
     }
-    // printPQueue()
 }
-window.onload = () => {
-    make_Grid();
 
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeIcon').className = theme === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o';
+    document.getElementById('themeLabel').textContent = theme === 'dark' ? 'Light' : 'Dark';
+    try {
+        localStorage.setItem('pf-theme', theme);
+    } catch (e) { }
+}
+
+function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+}
+
+function initTheme() {
+    let saved = null;
+    try {
+        saved = localStorage.getItem('pf-theme');
+    } catch (e) { }
+    if (!saved)
+        saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(saved);
+}
+
+function computeDims() {
+    const w = tableWrap.clientWidth;
+    const h = tableWrap.clientHeight;
+    WIDTH = Math.max(12, Math.floor(w / CELL));
+    HEIGHT = Math.max(8, Math.floor(h / CELL));
+}
+
+function buildGrid() {
+    computeDims();
+    make_Grid();
     previousStart = document.getElementsByClassName('start')[0];
     previousEnd = document.getElementsByClassName('end')[0];
+    pps = 'unv';
+    ppe = 'unv';
+    ListOfNodes.length = 0;
+    visiteds.length = 0;
+    vis.length = 0;
+    path.length = 0;
+    listM.length = 0;
+    nodes.length = 0;
+    count = 0;
+    visualizing = false;
+    viz = false;
+    textV.innerText = 0;
+    textP.innerText = 0;
+    document.getElementsByClassName('box')[0].style.display = 'none';
+}
 
-    for (i = 0; i < HEIGHT; i += 1) {
-        let id = i + "-" + 0;
-        let a = document.getElementById(id); a.style.borderLeft = '1px solid rgb(175, 216, 248)'
-    }
-    for (i = 0; i < WIDTH; i += 1) {
-        let id = HEIGHT - 1 + "-" + i;
-        let a = document.getElementById(id);
-        a.style.borderBottom = '1px solid rgb(175, 216, 248)'
-    }
-    modalalgo.style.pointerEvents = "none";
+initTheme();
+document.documentElement.style.setProperty('--cell', CELL + 'px');
+
+window.onload = () => {
+    buildGrid();
+    modalalgo.style.pointerEvents = 'none';
     modelMaze.style.pointerEvents = 'none';
     modalclear.style.pointerEvents = 'none';
-    modalspeed.style.pointerEevent = 'none';
+    modalspeed.style.pointerEvents = 'none';
     gridTable.style.pointerEvents = 'none';
-}
-//right = 2 left 0 (mouse keys)
+};
+
+window.addEventListener('resize', () => {
+    if (viz)
+        return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        const oldW = WIDTH;
+        const oldH = HEIGHT;
+        computeDims();
+        if (oldW !== WIDTH || oldH !== HEIGHT) {
+            buildGrid();
+            algoDesc.textContent = DEFAULT_DESC;
+            algoDesc.style.color = '';
+        }
+    }, 200);
+});
+
 gridTable.onmousedown = (event) => {
     if (event.button == 2) {
         rightpressed = true;
@@ -116,8 +173,8 @@ gridTable.onmousedown = (event) => {
         else
             endDrag = true;
     }
-}
-// disable all the slections
+};
+
 gridTable.onmouseup = () => {
     if (rightpressed)
         rightpressed = false;
@@ -126,7 +183,8 @@ gridTable.onmouseup = () => {
     else if (startDrag || endDrag)
         startDrag = false;
     endDrag = false;
-}
+};
+
 gridTable.onmousemove = (event) => {
     event.stopPropagation();
 
@@ -142,12 +200,10 @@ gridTable.onmousemove = (event) => {
         p.classList.remove("unv");
         p.classList.add("wall");
     } else if (!(event.target.tagName == "TABLE")) {
-        //if start node is selected
         if (startDrag) {
-            curr = event.target
-            currClassName = curr.className;
-            previousStart.classList.remove("start")
-            previousStart.classList.add(pps) //pps is prevous start class
+            curr = event.target;
+            previousStart.classList.remove("start");
+            previousStart.classList.add(pps);
             curr.classList.remove("unv");
             if (event.target.className == "end") {
                 curr.classList.remove("end");
@@ -162,20 +218,18 @@ gridTable.onmousemove = (event) => {
                 return;
             }
             if (event.target.className == 'wall') {
-                pps = "wall"
-                curr.classList.remove("wall")
+                pps = "wall";
+                curr.classList.remove("wall");
             } else {
-                pps = "unv"
+                pps = "unv";
             }
             curr.classList.add("start");
             previousStart = event.target;
-
         }
-        // if end node is selected
         else if (endDrag) {
-            let curr = event.target
-            previousEnd.classList.remove("end")
-            previousEnd.classList.add(ppe)//ppe previous end class
+            let curr = event.target;
+            previousEnd.classList.remove("end");
+            previousEnd.classList.add(ppe);
             curr.classList.remove("unv");
             if (event.target.className == "start") {
                 curr.classList.remove("start");
@@ -187,23 +241,24 @@ gridTable.onmousemove = (event) => {
                 previousStart.classList.remove("end");
                 previousStart.classList.add("start");
                 previousEnd = event.target;
-                return
-            } if (event.target.className == "wall") {
-                ppe = "wall"
+                return;
+            }
+            if (event.target.className == "wall") {
+                ppe = "wall";
                 curr.classList.remove("wall");
             } else {
-                ppe = "unv"
+                ppe = "unv";
             }
-            curr.classList.add("end")
+            curr.classList.add("end");
             previousEnd = event.target;
         }
     }
-    pN = event.target;
+};
 
-}
 function clearAll() {
     if (!viz) {
-        algoDesc.textContent=" Path Finder helps to visualizes various path finding Algorithms"
+        algoDesc.textContent = DEFAULT_DESC;
+        algoDesc.style.color = '';
         document.getElementsByClassName('box')[0].style.display = 'none';
 
         gridTable.style.pointerEvents = 'all';
@@ -225,19 +280,29 @@ function clearAll() {
             }
         });
 
+        Array.from(document.getElementsByClassName('wall')).forEach(element => {
+            element.classList.remove('wall');
+            element.classList.add('unv');
+        });
+
         ListOfNodes.length = 0;
         visiteds.length = 0;
         vis.length = 0;
         path.length = 0;
+        listM.length = 0;
+        textV.innerText = 0;
+        textP.innerText = 0;
     }
 }
+
 function clearPath() {
-    if(!viz){
-    algoDesc.textContent="Path Finder helps to visualizes various path finding Algorithms"
-    document.getElementsByClassName('box')[0].style.display = 'none';
-}
+    if (!viz) {
+        algoDesc.textContent = DEFAULT_DESC;
+        algoDesc.style.color = '';
+        document.getElementsByClassName('box')[0].style.display = 'none';
+    }
     if (ListOfNodes.length > 0 && !viz) {
-        gridTable.style.pointerEvents = 'all'
+        gridTable.style.pointerEvents = 'all';
         visualizing = false;
         ListOfNodes.forEach(element => {
             if (element.visited && element.id != start) {
@@ -251,47 +316,48 @@ function clearPath() {
         });
         vis.length = 0;
         path.length = 0;
+        textV.innerText = 0;
+        textP.innerText = 0;
     }
 }
+
 function make_Grid() {
+    const midRow = Math.floor(HEIGHT / 2);
+    const startCol = Math.max(1, Math.floor(WIDTH * 0.25));
+    const endCol = Math.min(WIDTH - 2, Math.floor(WIDTH * 0.75));
     let cR = "";
-    var nodeNo = 0;
     for (var i = 0; i < HEIGHT; i++) {
         cR += "<tr id='row-" + i + "'>";
         for (var k = 0; k < WIDTH; k++) {
-            if (nodeNo == 655) {
-                cR += "<td id='" + i + "-" + k + "' draggable='false' onclick='createWall(event)' class='start'></td>";
-            } else if (nodeNo == 678) {
-                cR += "<td id='" + i + "-" + k + "' draggable='false' onclick='createWall(event)' class='end' style=''></td>";
-            }
-            else {
-                cR += "<td id='" + i + "-" + k + "' draggable='false' onclick='createWall(event)' class='unv'></td>";
-            }
-            nodeNo++;
+            let cls = 'unv';
+            if (i == midRow && k == startCol)
+                cls = 'start';
+            else if (i == midRow && k == endCol)
+                cls = 'end';
+            cR += "<td id='" + i + "-" + k + "' draggable='false' onclick='createWall(event)' class='" + cls + "'></td>";
         }
-        cR += "</tr>"
+        cR += "</tr>";
     }
     gridTable.innerHTML = cR;
 }
+
 function createWall(event) {
     event.stopPropagation();
-    cn = event.target;
+    let cn = event.target;
     if (!cn.id.includes("row") && !(cn.className.includes("start") || cn.className.includes("end"))) {
         cn.classList.remove("unv");
         cn.classList.add("wall");
         nodes.push(cn.id);
     }
 }
+
 function changeAlgo(element) {
     modalalgo.textContent = element.textContent;
     algoName.textContent = element.textContent;
     algoselected = true;
     dropDownAlgo.style.display = 'none';
 }
-function changeMaze(element) {
-    modelMaze.textContent = element.textContent;
-    dropDownmaze.style.display = 'none';
-}
+
 function changeSpeed(element) {
     modalspeed.textContent = element.textContent;
     dropDownspeed.style.display = 'none';
@@ -304,58 +370,34 @@ function changeSpeed(element) {
     if (element.textContent.includes('Slow'))
         speed = 550;
 }
+
+function closeDropDowns() {
+    dropDownAlgo.style.display = 'none';
+    dropDownspeed.style.display = 'none';
+}
+
 function DropDown(event) {
-    if (event.target == modalalgo && dropDownAlgo.style.display == 'flex') {
-        dropDownAlgo.style.display = 'none';
-        
-    } else if (event.target == modalalgo && dropDownAlgo.style.display != 'flex') {
-        dropDownAlgo.style.display = 'flex';
-        dropDownspeed.style.display = 'none';
-        dropDownmaze.style.display = 'none';
+    if (event.target == modalalgo) {
+        const open = dropDownAlgo.style.display == 'flex';
+        closeDropDowns();
+        dropDownAlgo.style.display = open ? 'none' : 'flex';
     }
-    if (event.target == modalspeed && dropDownspeed.style.display == 'block') {
-        dropDownspeed.style.display = 'none';
-    } else if (event.target == modalspeed && dropDownspeed.style.display != 'block') {
-        dropDownspeed.style.display = 'block';
-        dropDownAlgo.style.display = 'none';
-        dropDownmaze.style.display = 'none';
-    }
-    if (event.target == modelMaze && dropDownmaze.style.display == 'block') {
-        dropDownmaze.style.display = 'none';
-    } else if (event.target == modelMaze && dropDownmaze.style.display != 'block') {
-        dropDownmaze.style.display = 'block';
-        dropDownAlgo.style.display = 'none';
-        dropDownspeed.style.display = 'none';
+    if (event.target == modalspeed) {
+        const open = dropDownspeed.style.display == 'flex';
+        closeDropDowns();
+        dropDownspeed.style.display = open ? 'none' : 'flex';
     }
 }
-function closePopUp(element){
-    modalalgo.style.pointerEvents = "all";
+
+function closePopUp(element) {
+    modalalgo.style.pointerEvents = 'all';
     modelMaze.style.pointerEvents = 'all';
     modalclear.style.pointerEvents = 'all';
+    modalspeed.style.pointerEvents = 'all';
     gridTable.style.pointerEvents = 'all';
-    element.parentNode.remove()
+    element.parentNode.remove();
 }
 
-
-// document.getElementById('btnVis').onmouseenter = (event) => {
-//     if (visualizing) {
-//         event.target.classList.add('visualizing');
-//         event.target.classList.remove('btn-visualize');
-//         event.target.style.backgroundColor = 'red'
-//         event.target.style.transition = 'all 0.3s';
-//     }
-// }
-// document.getElementById('btnVis').onmouseleave = (event) => {
-//     event.target.classList.remove('visualizing');
-//     event.target.classList.add('btn-visualize');
-//     event.target.style.backgroundColor = 'rgb(28, 187, 139)'
-// }
-// document.getElementById('btnVis').onmousedown = () => {
-//     (!visualizing) ? document.getElementById('btnVis').style.backgroundColor = "rgb(30, 223, 165)" : undefined;
-// }
-// document.getElementById('btnVis').onmouseup = () => {
-//     (!visualizing) ? document.getElementById('btnVis').style.backgroundColor = "rgb(28, 187, 139)" : undefined;
-// }
 function visualize() {
     if (algoselected && !visualizing) {
         document.getElementsByClassName('box')[0].style.display = 'flex';
@@ -367,14 +409,15 @@ function visualize() {
         gridTable.style.pointerEvents = 'none';
         algoVis(algoName.textContent);
         toAnimate(vis, 0, path);
-        algoDesc.textContent = "Visualizing "+algoName.textContent 
-        algoDesc.style.color = "green";
-    } 
+        algoDesc.textContent = "Visualizing " + algoName.textContent;
+        algoDesc.style.color = "#27ae60";
+    }
     else if (!algoselected && !visualizing) {
-        algoDesc.textContent = "Select Algorithm to Visualize"
-        algoDesc.style.color = "red";
+        algoDesc.textContent = "Select an algorithm to visualize";
+        algoDesc.style.color = "#e74c3c";
     }
 }
+
 function algoVis(algo) {
     vis.length = 0;
     path.length = 0;
@@ -399,27 +442,29 @@ function algoVis(algo) {
         var node = depthFirstSearch();
         vis = node[0];
         path = node[1];
-      }
-}
-// node start
-function getAllNodes(list) {
-    let nodes = []
-    for (let i = 0; i < list.length; i++) nodes.push(new _Node(list[i]))
-    return nodes;
-}
-//get node by id;'s
-function getNodeById(id) {
-    for (var i in ListOfNodes) {
-        if (ListOfNodes[i].id == id)
-            return ListOfNodes[i]
     }
 }
-//update the distance
+
+function getAllNodes(list) {
+    let all = [];
+    nodeIndex = new Map();
+    for (let i = 0; i < list.length; i++) {
+        let n = new _Node(list[i]);
+        all.push(n);
+        nodeIndex.set(n.id, n);
+    }
+    return all;
+}
+
+function getNodeById(id) {
+    return nodeIndex.get(id);
+}
+
 function updateDistance(node, distance) {
     node.distance = distance;
     return node;
 }
-//object node
+
 function _Node(node) {
     this.node = node;
     this.id = node.id;
@@ -430,46 +475,24 @@ function _Node(node) {
     this.col = node.id.split('-')[1];
     this.parent = null;
 }
-//get neighbours according to start's positon 
+
 function getNeighboursForUnweighted(node) {
-    neighbours = [];
+    let neighbours = [];
     let row = parseInt(node.row);
     let col = parseInt(node.col);
-    let n1 = getNodeById(`${row + 1}-${col}`);
-    let n2 = getNodeById(`${row - 1}-${col}`);
-    let n3 = getNodeById(`${row}-${col - 1}`);
-    let n4 = getNodeById(`${row}-${col + 1}`);
-    neighbours.push(n1);
-    neighbours.push(n2);
-    neighbours.push(n3);
-    neighbours.push(n4);
+    neighbours.push(getNodeById(`${row + 1}-${col}`));
+    neighbours.push(getNodeById(`${row - 1}-${col}`));
+    neighbours.push(getNodeById(`${row}-${col - 1}`));
+    neighbours.push(getNodeById(`${row}-${col + 1}`));
     return neighbours.filter((element) => {
         return element != undefined && !element.wall && !element.visited;
     });
 }
+
 function getNeighboursForGreedy(node) {
-    neighbours = [];
-    let row = parseInt(node.row);
-    let col = parseInt(node.col);
-
-    let n1 = getNodeById(`${row + 1}-${col}`);
-    let n2 = getNodeById(`${row - 1}-${col}`);
-    let n3 = getNodeById(`${row}-${col - 1}`);
-    let n4 = getNodeById(`${row}-${col + 1}`);
-
-
-    neighbours.push(n1);
-    neighbours.push(n2);
-    neighbours.push(n3);
-    neighbours.push(n4);
-
-
-    return neighbours.filter((element) => {
-        return element != undefined && !element.wall && !element.visited;
-    });
+    return getNeighboursForUnweighted(node);
 }
-// end node
-//faster then others
+
 function findMinDistanceInGraph(graph) {
     let len = graph.length;
     let min = Infinity;
@@ -479,10 +502,10 @@ function findMinDistanceInGraph(graph) {
     }
     return graph.find(element => element.distance == min);
 }
-//algorithms
+
 function dijkstra() {
-    prev = [];
-    visited = [];
+    let prev = [];
+    let visited = [];
 
     start = document.getElementsByClassName("start")[0].id;
     end = document.getElementsByClassName("end")[0].id;
@@ -490,24 +513,20 @@ function dijkstra() {
     let Unvnodes = document.getElementsByTagName('td');
 
     ListOfNodes = getAllNodes(Unvnodes);
-    temp = ListOfNodes;
-    updateDistance(getNodeById(start), 0)
+    let temp = ListOfNodes;
+    updateDistance(getNodeById(start), 0);
     var finished = null;
 
     while (temp.length != 0) {
-        //get min distance node
         let current = findMinDistanceInGraph(temp);
         if (current.id == getNodeById(end).id) {
-            //finished becomes the last visited node
             finished = current;
-            break
+            break;
         }
-        // no path
         if (current.distance == Infinity) break;
 
         visited.push(current);
 
-        //deleting the min distance node from graph
         temp = temp.filter(ele => ele != current);
 
         current.visited = true;
@@ -522,13 +541,13 @@ function dijkstra() {
             }
         }
     }
-    //back track from finished to start
     while (finished != null) {
         prev.unshift(finished);
         finished = finished.parent;
     }
     return [visited, (prev.length > 0) ? prev : null];
 }
+
 function bredthFirstSearch() {
     let vis = [];
     let path = [];
@@ -558,19 +577,18 @@ function bredthFirstSearch() {
 
         for (var i in neighbours) {
             neighbours[i].visited = true;
-            neighbours[i].parent = currentNode; //backtracing
+            neighbours[i].parent = currentNode;
             visited.unshift(neighbours[i]);
         }
     }
     while (finished != null) {
         path.unshift(finished);
-        finished = finished.parent
+        finished = finished.parent;
     }
-    return [vis, path]
+    return [vis, path];
 }
-//best first greedy
-function bestFirstSearch() {
 
+function bestFirstSearch() {
     let vis = [];
     let path = [];
 
@@ -580,12 +598,13 @@ function bestFirstSearch() {
 
     ListOfNodes = getAllNodes(Unvnodes);
 
-    pq = new PriorityQueue();
+    let pq = new PriorityQueue();
 
-    Snode = getNodeById(start)
+    let Snode = getNodeById(start);
     pq.enqueue(Snode, Snode.distance);
 
-    endNode = getNodeById(end);
+    let endNode = getNodeById(end);
+    let finished = null;
 
     while (!pq.isEmpty()) {
         let u = pq.dequeue();
@@ -612,8 +631,9 @@ function bestFirstSearch() {
         path.unshift(finished);
         finished = finished.parent;
     }
-    return [vis, path]
+    return [vis, path];
 }
+
 function AStar() {
     let vis = [];
     let path = [];
@@ -624,17 +644,16 @@ function AStar() {
 
     ListOfNodes = getAllNodes(Unvnodes);
 
-    sNode = getNodeById(start);
+    let sNode = getNodeById(start);
     sNode.distance = 0;
-    enode = getNodeById(end);
-    pq = new PriorityQueue();
-    pq.enqueue(sNode, 0)
+    let enode = getNodeById(end);
+    let pq = new PriorityQueue();
+    pq.enqueue(sNode, 0);
     var finished = null;
     while (!pq.isEmpty()) {
         let u = pq.dequeue();
         u.element.visited = true;
         vis.push(u.element);
-        // goal found
         if (u.element.id == end) {
             finished = u.element;
             break;
@@ -642,10 +661,10 @@ function AStar() {
         let neighbours = getNeighboursForGreedy(u.element);
 
         for (var i in neighbours) {
-            let weight = u.element.distance + 1; //G(n)
+            let weight = u.element.distance + 1;
             let gN = weight;
             neighbours[i].distance = weight;
-            let distance = calculateSignleLineDistance(enode, neighbours[i]) + gN; // H(n) + G(n)
+            let distance = calculateSignleLineDistance(enode, neighbours[i]) + gN;
             neighbours[i].parent = u.element;
             neighbours[i].visited = true;
             pq.enqueue(neighbours[i], distance);
@@ -656,9 +675,7 @@ function AStar() {
         finished = finished.parent;
     }
     return [vis, path];
-
 }
-// DFS
 
 function depthFirstSearch() {
     let vis = [];
@@ -669,83 +686,72 @@ function depthFirstSearch() {
     ListOfNodes = getAllNodes(Unvnodes);
     let startNode = getNodeById(start);
     let endNode = getNodeById(end);
-    // Call the recursive DFS function
-    let found = dfsRecursive(startNode, endNode, vis);
-    // If path is found, backtrack from the end node
+    let found = dfsIterative(startNode, endNode, vis);
     if (found) {
-      let currentNode = endNode;
-      while (currentNode != null) {
-        path.unshift(currentNode); // Unshift adds the node at the beginning
-        currentNode = currentNode.parent;
-      }
+        let currentNode = endNode;
+        while (currentNode != null) {
+            path.unshift(currentNode);
+            currentNode = currentNode.parent;
+        }
     }
     return [vis, path];
-  }
-  // Recursive DFS function
-  function dfsRecursive(currentNode, endNode, vis) {
-    currentNode.visited = true;
-    vis.push(currentNode);
-    // If we reach the end node, return true (path found)
-    if (currentNode.id == endNode.id) {
-      return true;
-    }
-    // Get all unvisited neighbors
-    let neighbours = getNeighboursForUnweighted(currentNode);
-    // Recursively visit each unvisited neighbor
-    for (let i in neighbours) {
-      if (!neighbours[i].visited) {
-        neighbours[i].parent = currentNode; // Track parent for backtracking
-        if (dfsRecursive(neighbours[i], endNode, vis)) {
-          return true; // Stop recursion if path to the end is found
-        }
-      }
-    }
-    return false; // Return false if no path is found from this node
-  }
+}
 
-// manhattan distance
+function dfsIterative(startNode, endNode, vis) {
+    let stack = [startNode];
+    while (stack.length > 0) {
+        let currentNode = stack.pop();
+        if (currentNode.visited)
+            continue;
+        currentNode.visited = true;
+        vis.push(currentNode);
+        if (currentNode.id == endNode.id)
+            return true;
+        let neighbours = getNeighboursForUnweighted(currentNode);
+        for (let i = neighbours.length - 1; i >= 0; i--) {
+            neighbours[i].parent = currentNode;
+            stack.push(neighbours[i]);
+        }
+    }
+    return false;
+}
+
 function calculateSignleLineDistance(Node1, Node2) {
-    var dis = 0;
-    let x1 = parseInt(Node1.row)
+    let x1 = parseInt(Node1.row);
     let y1 = parseInt(Node1.col);
     let x2 = parseInt(Node2.row);
     let y2 = parseInt(Node2.col);
-
-    dis = Math.abs(x2 - x1) + Math.abs(y2 - y1);
-
-    return dis;
+    return Math.abs(x2 - x1) + Math.abs(y2 - y1);
 }
-// end
-//Random Maza
-var listM = []
+
 function randomMaze() {
     if (listM.length > 0) {
-        clearMaze(listM, 0);
-        listM.length = 0
+        clearMaze(listM);
+        listM.length = 0;
     }
     const listNodes = document.getElementsByClassName('unv');
     let len = listNodes.length - 1;
 
     for (var i = 0; i < len / 4; i++) {
-        listM.push(listNodes[(Math.floor(Math.random() * len))].id)
+        listM.push(listNodes[(Math.floor(Math.random() * len))].id);
     }
-    Animation(listM, 0)
-}
-//animate visited nodes
-function Animation(list, i) {
-    if (i == list.length)
-        return;
-    document.getElementById(list[i]).classList.remove("unv");
-    document.getElementById(list[i]).classList.add("wall");
-    Animation(list, i + 1);
+    Animation(listM);
 }
 
-function clearMaze(listM, i) {
-    if (i == listM.length)
-        return;
-    document.getElementById(listM[i]).classList.remove("wall");
-    document.getElementById(listM[i]).classList.add("unv");
-    clearMaze(listM, i + 1);
+function Animation(list) {
+    for (let i = 0; i < list.length; i++) {
+        let cell = document.getElementById(list[i]);
+        cell.classList.remove("unv");
+        cell.classList.add("wall");
+    }
+}
+
+function clearMaze(list) {
+    for (let i = 0; i < list.length; i++) {
+        let cell = document.getElementById(list[i]);
+        cell.classList.remove("wall");
+        cell.classList.add("unv");
+    }
 }
 
 function toAnimate(vis, i, prev) {
@@ -757,12 +763,11 @@ function toAnimate(vis, i, prev) {
             document.getElementById(vis[i].id).classList.add('visited');
             visiteds.push(vis[i].id);
             textV.innerText = count;
-            //animate the shortest path
             pn.style.display = 'block';
             pv.style.display = 'block';
             textP.style.display = 'block';
-            count = 0
-            toAnimateP(prev, 0)
+            count = 0;
+            toAnimateP(prev, 0);
             return;
         }
         document.getElementById(vis[i].id).classList.remove('unv');
@@ -774,9 +779,11 @@ function toAnimate(vis, i, prev) {
         toAnimate(vis, i + 1, prev);
     }, speed);
 }
-//animate path
+
 function toAnimateP(prev, i) {
     if (prev == null) {
+        viz = false;
+        count = 0;
         return;
     }
     setTimeout(() => {

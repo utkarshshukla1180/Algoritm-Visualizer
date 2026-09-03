@@ -1,95 +1,139 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv='cache-control' content='no-cache'>
-    <meta http-equiv='expires' content='0'>
-    <meta http-equiv='pragma' content='no-cache'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="icnon.png" type="image/x-icon">
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="icnon.png" type="image/x-icon" />
     <title>Path Finder</title>
-</head>
+  </head>
 
-<body ondragstart="return false;" ondrop="return false;">
-        <div class="navbar">
-            <h1 class="nav-h">
-                Path Finder
-            </h1>
-            <div class="speeddropdown">
-                <button onmouseenter="DropDown(event)"  id='speedbtntext' class='btn-speed'> Speed<i style="padding-left:10px"
-                        class="fa fa-caret-down"></i></button>
-                <div class="speeddropdownContent">
-                    <a onclick="changeSpeed(this)" class='speed-link' href="#">Super Fast</a>
-                    <a onclick="changeSpeed(this)" class='speed-link' href="#">Fast</a>
-                    <a onclick="changeSpeed(this)" class='speed-link' href="#">Medium</a>
-                    <a onclick="changeSpeed(this)" class='speed-link' href="#">Slow</a>
-                </div>
-            </div>
-            <div class="algodropdown">
-                <button onmouseenter="DropDown(event)"  class='btn-algo' id='algobtntext'>Algorithm's<i
-                        style="padding-left:10px" class="fa fa-caret-down"></i></button>
-                <div class="algodropdownContent">
-                    <a onclick="changeAlgo(this)" class='algo-link' href="#">Depth First Search</a>
-                    <a onclick="changeAlgo(this)" class='algo-link' href="#">Breadth First Search</a>
-                    <a onclick="changeAlgo(this)" class='algo-link' href="#">Best First Search</a>
-                    <a onclick="changeAlgo(this)" class='algo-link' href="#">Dijkstra</a>
-                    <a onclick="changeAlgo(this)" class='algo-link' href="#">A *</a>
-                </div>
-            </div>
-            <div class="MazeDropDown">
-                <button  onclick="randomMaze()" href="#" id="mazebtntext" class='btn-maze'>Random Maze</button>
-            </div>
-            <div class="" >
-                <button onclick="clearAll()" class='reset-button' id='btnclearswalls'>Clear Grid</button>
-            </div>
-            <div class="">
-                <button onclick="clearPath()" class=' reset-button' id='btnclearswalls'>Clear Path and Visited Nodes</button>
-            </div>
-        </div>
-    
-    <div class="container">
-        <div class="visualize">
-            <button onclick="visualize()" id='btnVis' class="btn-visualize">
-                Visualize
-                 <span id='algoName'>Select Algorithm</span>
-            </button>
-            <div class='algo-desc'>
-                <div class="algo-descr" id='algoDesc'>
-                    Path Finder helps to visualizes various path finding Algorithms</div>
-                <div class="box">
-                    <p style="margin: 0;color:rgb(162, 76, 6);">Visited Nodes</p>
-                    <i class='boxVisited' id='boxVisited'></i>
-                    <p id='textV'>0</P>
-                    <p style="margin: 0; color: rgb(162, 76, 6);" id='pn'>Path Nodes</p>
-                    <i class='boxVisited' id='pathVisited'></i>
-                    <p id='textP'>0</p>
-                </div>
-                </p>
-            </div>
-        </div>
-        <div class="table">
-            <table oncontextmenu="return false;" id="gridTable" draggable="false" cellspacing=0 CELLPADDING=0>
-            </table>
-        </div>
-        <div class="popup" id="popup">
-            <span style="float: left; font-size:25px; font-weight: 700;float: right;
-            padding-right: 10px;" onclick="closePopUp(this)" class="close" id='close'>x</span>  
-            <p style="float: left; padding-right: 10px; margin-top: 5px;text-align:center; font-weight: 700">
-                <strong style="color: darkgreen;text-align: end;">Demonstration</strong>
-                <br><br>
-                Click and drag mouse on grid to make <strong style="color: red;">walls</strong> 
-                select an <strong style="color: red;">Algorithm</strong> and click visualize</p>
-            
-            <img src="homeAnimation1.gif" alt="" style="transform: scale(0.9);">
-            <!-- <a href="tutorialpage.html" id='btnVis' class="btn-tut" style="font-style: normal;text-decoration: none;
-                 color: white;">Tutorial page</a> -->
-        </div>
-    </div>xx
-</body>
-<script src="scriptbasic.js"></script>
+  <body ondragstart="return false;" ondrop="return false;">
+    <header class="navbar">
+      <h1 class="nav-h">Path Finder</h1>
 
+      <nav class="nav-actions">
+        <div class="speeddropdown" onmouseleave="closeDropDowns()">
+          <button
+            onmouseenter="DropDown(event)"
+            id="speedbtntext"
+            class="btn-speed"
+          >
+            Speed<i class="fa fa-caret-down"></i>
+          </button>
+          <div class="speeddropdownContent">
+            <a onclick="changeSpeed(this)" class="speed-link" href="#"
+              >Super Fast</a
+            >
+            <a onclick="changeSpeed(this)" class="speed-link" href="#">Fast</a>
+            <a onclick="changeSpeed(this)" class="speed-link" href="#"
+              >Medium</a
+            >
+            <a onclick="changeSpeed(this)" class="speed-link" href="#">Slow</a>
+          </div>
+        </div>
+
+        <div class="algodropdown" onmouseleave="closeDropDowns()">
+          <button
+            onmouseenter="DropDown(event)"
+            class="btn-algo"
+            id="algobtntext"
+          >
+            Algorithm's<i class="fa fa-caret-down"></i>
+          </button>
+          <div class="algodropdownContent">
+            <a onclick="changeAlgo(this)" class="algo-link" href="#"
+              >Depth First Search</a
+            >
+            <a onclick="changeAlgo(this)" class="algo-link" href="#"
+              >Breadth First Search</a
+            >
+            <a onclick="changeAlgo(this)" class="algo-link" href="#"
+              >Best First Search</a
+            >
+            <a onclick="changeAlgo(this)" class="algo-link" href="#"
+              >Dijkstra</a
+            >
+            <a onclick="changeAlgo(this)" class="algo-link" href="#">A *</a>
+          </div>
+        </div>
+
+        <button onclick="randomMaze()" id="mazebtntext" class="btn-maze">
+          Random Maze
+        </button>
+        <button onclick="clearAll()" class="reset-button" id="btnclearswalls">
+          Clear Grid
+        </button>
+        <button onclick="clearPath()" class="reset-button">Clear Path</button>
+
+        <button
+          onclick="toggleTheme()"
+          class="btn-theme"
+          id="themeToggle"
+          title="Switch theme"
+        >
+          <i class="fa fa-moon-o" id="themeIcon"></i>
+          <span id="themeLabel">Dark</span>
+        </button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="visualize">
+        <button onclick="visualize()" id="btnVis" class="btn-visualize">
+          Visualize <span id="algoName">Select Algorithm</span>
+        </button>
+
+        <div class="algo-desc">
+          <div class="algo-descr" id="algoDesc">
+            Path Finder visualizes how different path finding algorithms search
+            a grid
+          </div>
+          <div class="box">
+            <span class="legend">
+              <i class="boxVisited" id="boxVisited"></i>
+              <span class="legend-label">Visited</span>
+              <span id="textV">0</span>
+            </span>
+            <span class="legend">
+              <i class="boxVisited" id="pathVisited"></i>
+              <span class="legend-label" id="pn">Path</span>
+              <span id="textP">0</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-wrap">
+        <table
+          oncontextmenu="return false;"
+          id="gridTable"
+          draggable="false"
+          cellspacing="0"
+          cellpadding="0"
+        ></table>
+      </section>
+    </main>
+
+    <div class="popup" id="popup">
+      <span class="close" id="close" onclick="closePopUp(this)">&times;</span>
+      <h2 class="popup-title">How it works</h2>
+      <p>
+        Drag across the grid to draw <strong>walls</strong>, drag the start and
+        target icons to move them, then pick an <strong>algorithm</strong> and
+        hit visualize.
+      </p>
+      <img src="homeAnimation1.gif" alt="Drawing walls on the grid" />
+    </div>
+
+    <script src="scriptbasic.js"></script>
+  </body>
 </html>
